@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "course-management-api",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd /d C:\\Users\\HP\\IdeaProjects\\course-management && mvnw.cmd spring-boot:run"],
+      "port": 8080
+    }
+  ]
+}
