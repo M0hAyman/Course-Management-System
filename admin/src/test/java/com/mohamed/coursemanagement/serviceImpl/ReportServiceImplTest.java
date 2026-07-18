@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
+import com.mohamed.coursemanagement.mapper.CourseMapper;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -29,6 +31,9 @@ class ReportServiceImplTest {
 
     @Mock
     private EnrollmentRepository enrollmentRepository;
+
+    @Spy
+    private CourseMapper courseMapper;
 
     @InjectMocks
     private ReportServiceImpl reportService;

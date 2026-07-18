@@ -8,6 +8,7 @@ import com.mohamed.coursemanagement.entity.Student;
 import com.mohamed.coursemanagement.exception.DuplicateResourceException;
 import com.mohamed.coursemanagement.exception.RegistrationClosedException;
 import com.mohamed.coursemanagement.exception.ResourceNotFoundException;
+import com.mohamed.coursemanagement.mapper.EnrollmentMapper;
 import com.mohamed.coursemanagement.repository.CourseRepository;
 import com.mohamed.coursemanagement.repository.EnrollmentRepository;
 import com.mohamed.coursemanagement.repository.StudentRepository;
@@ -27,6 +28,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final StudentRepository studentRepository;
     private final CourseRepository courseRepository;
+    private final EnrollmentMapper enrollmentMapper;
 
     @Override
     public EnrollmentResponseDto enroll(EnrollmentRequestDto request) {
@@ -49,7 +51,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                 .build();
 
         Enrollment saved = enrollmentRepository.save(enrollment);
-        return toResponseDto(saved);
+        return enrollmentMapper.toDto(saved);
     }
 
     private void validateRegistrationWindow(Course course) {
@@ -80,7 +82,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         if (!studentRepository.existsById(studentId)) {
             throw new ResourceNotFoundException("Student not found with id: " + studentId);
         }
-        return enrollmentRepository.findByStudentId(studentId, pageable).map(this::toResponseDto);
+        return enrollmentRepository.findByStudentId(studentId, pageable).map(enrollmentMapper::toDto);
     }
 
     @Override
@@ -89,17 +91,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         if (!courseRepository.existsById(courseId)) {
             throw new ResourceNotFoundException("Course not found with id: " + courseId);
         }
-        return enrollmentRepository.findByCourseId(courseId, pageable).map(this::toResponseDto);
+        return enrollmentRepository.findByCourseId(courseId, pageable).map(enrollmentMapper::toDto);
     }
 
-    private EnrollmentResponseDto toResponseDto(Enrollment enrollment) {
-        return new EnrollmentResponseDto(
-                enrollment.getId(),
-                enrollment.getStudent().getId(),
-                enrollment.getStudent().getName(),
-                enrollment.getCourse().getId(),
-                enrollment.getCourse().getTitle(),
-                enrollment.getEnrolledAt()
-        );
-    }
 }

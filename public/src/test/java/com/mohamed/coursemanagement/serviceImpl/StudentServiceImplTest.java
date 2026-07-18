@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
+import com.mohamed.coursemanagement.mapper.StudentMapper;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -32,6 +34,9 @@ class StudentServiceImplTest {
 
     @Mock
     private StudentRepository studentRepository;
+
+    @Spy
+    private StudentMapper studentMapper;
 
     @InjectMocks
     private StudentServiceImpl studentService;

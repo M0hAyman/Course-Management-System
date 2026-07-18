@@ -1,7 +1,7 @@
 package com.mohamed.coursemanagement.serviceImpl;
 
 import com.mohamed.coursemanagement.dto.CourseReportDto;
-import com.mohamed.coursemanagement.entity.Course;
+import com.mohamed.coursemanagement.mapper.CourseMapper;
 import com.mohamed.coursemanagement.repository.CourseRepository;
 import com.mohamed.coursemanagement.repository.EnrollmentRepository;
 import com.mohamed.coursemanagement.service.ReportService;
@@ -18,20 +18,11 @@ public class ReportServiceImpl implements ReportService {
 
     private final CourseRepository courseRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final CourseMapper courseMapper;
 
     @Override
     public Page<CourseReportDto> courseEnrollmentReport(Pageable pageable) {
-        return courseRepository.findByDeletedFalse(pageable).map(this::toReportDto);
-    }
-
-    private CourseReportDto toReportDto(Course course) {
-        return new CourseReportDto(
-                course.getId(),
-                course.getTitle(),
-                course.getInstructor().getName(),
-                enrollmentRepository.countByCourseId(course.getId()),
-                course.getRegistrationStartTime(),
-                course.getRegistrationEndTime()
-        );
+        return courseRepository.findByDeletedFalse(pageable)
+                .map(course -> courseMapper.toReportDto(course, enrollmentRepository.countByCourseId(course.getId())));
     }
 }
