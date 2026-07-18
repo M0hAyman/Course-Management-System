@@ -1,4 +1,4 @@
-package com.mohamed.coursemanagement.service.impl;
+package com.mohamed.coursemanagement.serviceImpl;
 
 import com.mohamed.coursemanagement.dto.CourseReportDto;
 import com.mohamed.coursemanagement.entity.Course;
