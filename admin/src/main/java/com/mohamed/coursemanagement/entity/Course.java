@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,4 +46,8 @@ public class Course {
     @Builder.Default
     @Column(nullable = false)
     private boolean deleted = false;
+
+    private LocalDateTime registrationStartTime;
+
+    private LocalDateTime registrationEndTime;
 }

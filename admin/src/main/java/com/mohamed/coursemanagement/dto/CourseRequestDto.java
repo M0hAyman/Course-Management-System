@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
+import java.time.LocalDateTime;
+
 public record CourseRequestDto(
 
         @NotBlank(message = "Title is required")
@@ -16,6 +18,12 @@ public record CourseRequestDto(
         Integer credits,
 
         @NotNull(message = "Instructor id is required")
-        Long instructorId
+        Long instructorId,
+
+        @NotNull(message = "Registration start time is required")
+        LocalDateTime registrationStartTime,
+
+        @NotNull(message = "Registration end time is required")
+        LocalDateTime registrationEndTime
 ) {
 }

@@ -4,6 +4,7 @@ import com.mohamed.coursemanagement.dto.CourseRequestDto;
 import com.mohamed.coursemanagement.dto.CourseResponseDto;
 import com.mohamed.coursemanagement.entity.Course;
 import com.mohamed.coursemanagement.entity.Instructor;
+import com.mohamed.coursemanagement.exception.InvalidRegistrationWindowException;
 import com.mohamed.coursemanagement.exception.ResourceNotFoundException;
 import com.mohamed.coursemanagement.repository.CourseRepository;
 import com.mohamed.coursemanagement.repository.InstructorRepository;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,9 +44,14 @@ class CourseServiceImplTest {
 
     private Instructor instructor;
     private Course course;
+    private LocalDateTime regStart;
+    private LocalDateTime regEnd;
 
     @BeforeEach
     void setUp() {
+        regStart = LocalDateTime.of(2026, 8, 1, 9, 0);
+        regEnd = LocalDateTime.of(2026, 8, 15, 23, 59);
+
         instructor = Instructor.builder()
                 .id(1L)
                 .name("Dr. Ahmed Hassan")
@@ -57,12 +64,14 @@ class CourseServiceImplTest {
                 .description("Intro to Spring Boot")
                 .credits(3)
                 .instructor(instructor)
+                .registrationStartTime(regStart)
+                .registrationEndTime(regEnd)
                 .build();
     }
 
     @Test
     void create_savesCourseAndReturnsDto() {
-        CourseRequestDto request = new CourseRequestDto("Spring Boot 101", "Intro to Spring Boot", 3, 1L);
+        CourseRequestDto request = new CourseRequestDto("Spring Boot 101", "Intro to Spring Boot", 3, 1L, regStart, regEnd);
         when(instructorRepository.findById(1L)).thenReturn(Optional.of(instructor));
         when(courseRepository.save(any(Course.class))).thenReturn(course);
 
@@ -76,7 +85,7 @@ class CourseServiceImplTest {
 
     @Test
     void create_throwsNotFound_whenInstructorMissing() {
-        CourseRequestDto request = new CourseRequestDto("Spring Boot 101", "Intro", 3, 99L);
+        CourseRequestDto request = new CourseRequestDto("Spring Boot 101", "Intro", 3, 99L, regStart, regEnd);
         when(instructorRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> courseService.create(request))
@@ -84,6 +93,29 @@ class CourseServiceImplTest {
                 .hasMessageContaining("Instructor not found");
 
         verify(courseRepository, never()).save(any());
+    }
+
+    @Test
+    void create_throwsBadRequest_whenWindowEndsBeforeItStarts() {
+        CourseRequestDto request = new CourseRequestDto("Spring Boot 101", "Intro", 3, 1L, regEnd, regStart);
+
+        assertThatThrownBy(() -> courseService.create(request))
+                .isInstanceOf(InvalidRegistrationWindowException.class)
+                .hasMessageContaining("must be after");
+
+        verify(courseRepository, never()).save(any());
+    }
+
+    @Test
+    void create_returnsRegistrationWindowInResponse() {
+        CourseRequestDto request = new CourseRequestDto("Spring Boot 101", "Intro to Spring Boot", 3, 1L, regStart, regEnd);
+        when(instructorRepository.findById(1L)).thenReturn(Optional.of(instructor));
+        when(courseRepository.save(any(Course.class))).thenReturn(course);
+
+        CourseResponseDto result = courseService.create(request);
+
+        assertThat(result.registrationStartTime()).isEqualTo(regStart);
+        assertThat(result.registrationEndTime()).isEqualTo(regEnd);
     }
 
     @Test
@@ -138,7 +170,7 @@ class CourseServiceImplTest {
 
     @Test
     void update_changesFieldsAndReturnsDto() {
-        CourseRequestDto request = new CourseRequestDto("Spring Boot Advanced", "Deep dive", 4, 1L);
+        CourseRequestDto request = new CourseRequestDto("Spring Boot Advanced", "Deep dive", 4, 1L, regStart, regEnd);
         when(courseRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(course));
 
         CourseResponseDto result = courseService.update(1L, request);
@@ -154,7 +186,7 @@ class CourseServiceImplTest {
                 .name("Dr. Sara Ali")
                 .email("sara@uni.edu")
                 .build();
-        CourseRequestDto request = new CourseRequestDto("Spring Boot 101", "Intro", 3, 2L);
+        CourseRequestDto request = new CourseRequestDto("Spring Boot 101", "Intro", 3, 2L, regStart, regEnd);
         when(courseRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(course));
         when(instructorRepository.findById(2L)).thenReturn(Optional.of(newInstructor));
 

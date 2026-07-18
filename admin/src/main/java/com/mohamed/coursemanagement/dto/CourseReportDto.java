@@ -2,13 +2,11 @@ package com.mohamed.coursemanagement.dto;
 
 import java.time.LocalDateTime;
 
-public record CourseResponseDto(
-        Long id,
+public record CourseReportDto(
+        Long courseId,
         String title,
-        String description,
-        Integer credits,
-        Long instructorId,
         String instructorName,
+        long enrollmentCount,
         LocalDateTime registrationStartTime,
         LocalDateTime registrationEndTime
 ) {

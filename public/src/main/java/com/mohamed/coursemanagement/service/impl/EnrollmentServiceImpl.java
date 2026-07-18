@@ -6,12 +6,14 @@ import com.mohamed.coursemanagement.entity.Course;
 import com.mohamed.coursemanagement.entity.Enrollment;
 import com.mohamed.coursemanagement.entity.Student;
 import com.mohamed.coursemanagement.exception.DuplicateResourceException;
+import com.mohamed.coursemanagement.exception.RegistrationClosedException;
 import com.mohamed.coursemanagement.exception.ResourceNotFoundException;
 import com.mohamed.coursemanagement.repository.CourseRepository;
 import com.mohamed.coursemanagement.repository.EnrollmentRepository;
 import com.mohamed.coursemanagement.repository.StudentRepository;
 import com.mohamed.coursemanagement.service.EnrollmentService;
 import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,8 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         Course course = courseRepository.findByIdAndDeletedFalse(request.courseId())
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + request.courseId()));
 
+        validateRegistrationWindow(course);
+
         if (enrollmentRepository.existsByStudentIdAndCourseId(student.getId(), course.getId())) {
             throw new DuplicateResourceException(
                     "Student " + student.getId() + " is already enrolled in course " + course.getId());
@@ -46,6 +50,21 @@ public class EnrollmentServiceImpl implements EnrollmentService {
 
         Enrollment saved = enrollmentRepository.save(enrollment);
         return toResponseDto(saved);
+    }
+
+    private void validateRegistrationWindow(Course course) {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (course.getRegistrationStartTime() != null && now.isBefore(course.getRegistrationStartTime())) {
+            throw new RegistrationClosedException(
+                    "Registration for course '" + course.getTitle() + "' has not opened yet. It opens at "
+                            + course.getRegistrationStartTime());
+        }
+        if (course.getRegistrationEndTime() != null && now.isAfter(course.getRegistrationEndTime())) {
+            throw new RegistrationClosedException(
+                    "Registration for course '" + course.getTitle() + "' has closed. It ended at "
+                            + course.getRegistrationEndTime());
+        }
     }
 
     @Override

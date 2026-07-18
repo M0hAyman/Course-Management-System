@@ -7,6 +7,7 @@ import com.mohamed.coursemanagement.entity.Enrollment;
 import com.mohamed.coursemanagement.entity.Instructor;
 import com.mohamed.coursemanagement.entity.Student;
 import com.mohamed.coursemanagement.exception.DuplicateResourceException;
+import com.mohamed.coursemanagement.exception.RegistrationClosedException;
 import com.mohamed.coursemanagement.exception.ResourceNotFoundException;
 import com.mohamed.coursemanagement.repository.CourseRepository;
 import com.mohamed.coursemanagement.repository.EnrollmentRepository;
@@ -71,6 +72,8 @@ class EnrollmentServiceImplTest {
                 .title("Spring Boot 101")
                 .credits(3)
                 .instructor(instructor)
+                .registrationStartTime(LocalDateTime.now().minusDays(1))
+                .registrationEndTime(LocalDateTime.now().plusDays(7))
                 .build();
 
         enrollment = Enrollment.builder()
@@ -94,6 +97,51 @@ class EnrollmentServiceImplTest {
         assertThat(result.studentName()).isEqualTo("Mohamed Ayman");
         assertThat(result.courseTitle()).isEqualTo("Spring Boot 101");
         verify(enrollmentRepository).save(any(Enrollment.class));
+    }
+
+    @Test
+    void enroll_throwsBadRequest_whenRegistrationHasNotOpenedYet() {
+        course.setRegistrationStartTime(LocalDateTime.now().plusDays(2));
+        course.setRegistrationEndTime(LocalDateTime.now().plusDays(9));
+        EnrollmentRequestDto request = new EnrollmentRequestDto(1L, 1L);
+        when(studentRepository.findById(1L)).thenReturn(Optional.of(student));
+        when(courseRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> enrollmentService.enroll(request))
+                .isInstanceOf(RegistrationClosedException.class)
+                .hasMessageContaining("has not opened yet");
+
+        verify(enrollmentRepository, never()).save(any());
+    }
+
+    @Test
+    void enroll_throwsBadRequest_whenRegistrationHasAlreadyClosed() {
+        course.setRegistrationStartTime(LocalDateTime.now().minusDays(9));
+        course.setRegistrationEndTime(LocalDateTime.now().minusDays(2));
+        EnrollmentRequestDto request = new EnrollmentRequestDto(1L, 1L);
+        when(studentRepository.findById(1L)).thenReturn(Optional.of(student));
+        when(courseRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> enrollmentService.enroll(request))
+                .isInstanceOf(RegistrationClosedException.class)
+                .hasMessageContaining("has closed");
+
+        verify(enrollmentRepository, never()).save(any());
+    }
+
+    @Test
+    void enroll_allowsCourseWithoutRegistrationWindow() {
+        course.setRegistrationStartTime(null);
+        course.setRegistrationEndTime(null);
+        EnrollmentRequestDto request = new EnrollmentRequestDto(1L, 1L);
+        when(studentRepository.findById(1L)).thenReturn(Optional.of(student));
+        when(courseRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(course));
+        when(enrollmentRepository.existsByStudentIdAndCourseId(1L, 1L)).thenReturn(false);
+        when(enrollmentRepository.save(any(Enrollment.class))).thenReturn(enrollment);
+
+        EnrollmentResponseDto result = enrollmentService.enroll(request);
+
+        assertThat(result.id()).isEqualTo(1L);
     }
 
     @Test

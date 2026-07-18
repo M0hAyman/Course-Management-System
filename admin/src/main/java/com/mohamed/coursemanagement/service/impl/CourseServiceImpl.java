@@ -4,6 +4,7 @@ import com.mohamed.coursemanagement.dto.CourseRequestDto;
 import com.mohamed.coursemanagement.dto.CourseResponseDto;
 import com.mohamed.coursemanagement.entity.Course;
 import com.mohamed.coursemanagement.entity.Instructor;
+import com.mohamed.coursemanagement.exception.InvalidRegistrationWindowException;
 import com.mohamed.coursemanagement.exception.ResourceNotFoundException;
 import com.mohamed.coursemanagement.repository.CourseRepository;
 import com.mohamed.coursemanagement.repository.InstructorRepository;
@@ -24,6 +25,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public CourseResponseDto create(CourseRequestDto request) {
+        validateRegistrationWindow(request);
         Instructor instructor = findInstructorOrThrow(request.instructorId());
 
         Course course = Course.builder()
@@ -31,6 +33,8 @@ public class CourseServiceImpl implements CourseService {
                 .description(request.description())
                 .credits(request.credits())
                 .instructor(instructor)
+                .registrationStartTime(request.registrationStartTime())
+                .registrationEndTime(request.registrationEndTime())
                 .build();
 
         Course saved = courseRepository.save(course);
@@ -58,6 +62,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public CourseResponseDto update(Long id, CourseRequestDto request) {
+        validateRegistrationWindow(request);
         Course course = findCourseOrThrow(id);
 
         if (!course.getInstructor().getId().equals(request.instructorId())) {
@@ -67,6 +72,8 @@ public class CourseServiceImpl implements CourseService {
         course.setTitle(request.title());
         course.setDescription(request.description());
         course.setCredits(request.credits());
+        course.setRegistrationStartTime(request.registrationStartTime());
+        course.setRegistrationEndTime(request.registrationEndTime());
 
         return toResponseDto(course);
     }
@@ -87,6 +94,13 @@ public class CourseServiceImpl implements CourseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor not found with id: " + instructorId));
     }
 
+    private void validateRegistrationWindow(CourseRequestDto request) {
+        if (!request.registrationEndTime().isAfter(request.registrationStartTime())) {
+            throw new InvalidRegistrationWindowException(
+                    "Registration end time must be after the registration start time");
+        }
+    }
+
     private CourseResponseDto toResponseDto(Course course) {
         return new CourseResponseDto(
                 course.getId(),
@@ -94,7 +108,9 @@ public class CourseServiceImpl implements CourseService {
                 course.getDescription(),
                 course.getCredits(),
                 course.getInstructor().getId(),
-                course.getInstructor().getName()
+                course.getInstructor().getName(),
+                course.getRegistrationStartTime(),
+                course.getRegistrationEndTime()
         );
     }
 }
